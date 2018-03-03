@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 
 from collections import namedtuple
-
+from datetime import datetime,timedelta
 
 def solve_it(input_data):
     # Modify this code to run your optimization algorithm
-
+    start = datetime.now()
     # parse the input
     lines = input_data.split('\n')
 
@@ -26,8 +26,6 @@ def solve_it(input_data):
     for edge in edges:
         solution_matrix[edge[0]][edge[1]] = -1
         solution_matrix[edge[1]][edge[0]] = -1
-    # for row in solution_matrix:
-    #     print(row)
 
     Node = namedtuple('Node', ['index', 'rank', 'color', 'domain', 'edges', 'count'])
 
@@ -54,14 +52,11 @@ def solve_it(input_data):
         for j in range(i, node_count):
             if len(nodes[j].domain) == 0:
                 best_index_1 = j
-            else:
-                node_temp = nodes[j]
-                if node_temp.edges.count(-1) > best_count:
-                    best_count = node_temp.edges.count(-1)
-                    best_index_2 = j
+            node_temp = nodes[j]
+            if node_temp.edges.count(-1) > best_count:
+                best_count = node_temp.edges.count(-1)
+                best_index_2 = j
         if best_index_1 > 0 and len(nodes[best_index_2].domain) > 0:
-            best_index = best_index_1
-        elif best_index_1 > 0 and best_index_2 < 0:
             best_index = best_index_1
         else:
             best_index = best_index_2
@@ -71,26 +66,32 @@ def solve_it(input_data):
         for node in nodes:
             pop_element = node.edges.pop(best_index)
             node.edges.insert(i, pop_element)
-        # print(str(i) + ' ' + str(best_index))
         if len(nodes[i].domain) == 0:
             nodes[i].color.append(color_count)
-            # print('Choose New Color:' + str(color_count))
             for t in range(i + 1):
-                if color_count != nodes[i].color:
+                if color_count != nodes[i].color[0]:
                     nodes[t].edges[i] = node_count
                     nodes[i].edges[t] = node_count
             for q in range(i + 1, node_count):
                 if color_count not in nodes[q].domain and nodes[q].edges[i] != -1:
                     nodes[q].domain.append(color_count)
             color_count += 1
-            # for node in nodes:
-            #     node.count = node.edges.count(-1)
         else:
-            color_temp = nodes[i].domain.pop()
+            min_influence_count = node_count - i + 1
+            best_color_choice = 0
+            for color_choice_i in range(len(nodes[i].domain)):
+                influence_count = 0
+                for j in range(i, node_count):
+                    if nodes[i].domain[color_choice_i] in nodes[j].domain and nodes[j].edges[i] == -1:
+                        influence_count += 1
+                if influence_count < min_influence_count:
+                    min_influence_count = influence_count
+                    best_color_choice = color_choice_i
+
+            color_temp = nodes[i].domain.pop(best_color_choice)
             nodes[i].color.append(color_temp)
-            # print('Choose Old Color:' + str(color_temp))
             for t in range(i + 1):
-                if color_temp != nodes[i].color:
+                if color_temp != nodes[i].color[0]:
                     nodes[t].edges[i] = node_count
                     nodes[i].edges[t] = node_count
             for q in range(i + 1, node_count):
@@ -99,6 +100,7 @@ def solve_it(input_data):
                     for index in range(len(nodes[q].domain)):
                         if nodes[q].domain[index] == color_temp:
                             index_pop = index
+                            break
                     nodes[q].domain.pop(index_pop)
 
     for node in nodes:
@@ -131,10 +133,17 @@ def solve_it(input_data):
 
     solution_root = Solution(-1, 0, [node for node in nodes_start])
     solution_sets = [solution_root]
-    current_opt = greedy_opt
+    current_opt = greedy_opt - 1
     best_solution_nodes = greedy_solution_nodes
     while len(solution_sets):
+        current_time = datetime.now()
+        timespan = current_time - start
+        if timespan.total_seconds() >= 360:
+#            print('Time excessed')
+            break
+        solution_sets.sort(key=lambda x: -(x[1] - x[0]))
         solution_sets.sort(key=lambda x: x[0])
+
         current_solution = solution_sets.pop()
         current_depth = current_solution.depth
         current_color_number = current_solution.color_number
@@ -149,14 +158,11 @@ def solve_it(input_data):
             for j in range(current_depth, len(current_nodes)):
                 if len(current_nodes[j].domain) == 0:
                     best_index_1 = j
-                else:
-                    node_temp = current_nodes[j]
-                    if node_temp.edges.count(-1) > best_count:
-                        best_count = node_temp.edges.count(-1)
-                        best_index_2 = j
+                node_temp = current_nodes[j]
+                if node_temp.edges.count(-1) > best_count:
+                    best_count = node_temp.edges.count(-1)
+                    best_index_2 = j
             if best_index_1 > 0 and len(current_nodes[best_index_2].domain) > 0:
-                best_index = best_index_1
-            elif best_index_1 > 0 and best_index_2 < 0:
                 best_index = best_index_1
             else:
                 best_index = best_index_2
@@ -217,7 +223,7 @@ def solve_it(input_data):
                     color_lists[current_depth].append(color_temp)
 
                     for t in range(current_depth + 1):
-                        if color_temp != current_nodes[t].color:
+                        if color_temp != color_lists[t][0]:
                             solution_matrix_temp[t][current_depth] = node_count
                             solution_matrix_temp[current_depth][t] = node_count
                     for q in range(current_depth + 1, node_count):
@@ -248,6 +254,10 @@ def solve_it(input_data):
     # prepare the solution in the specified output format
     output_data = str(color_count) + ' ' + str(0) + '\n'
     output_data += ' '.join(map(str, solution))
+    print(output_data)
+    current_time = datetime.now()
+    timespan = current_time - start
+    print('Time: ' + str(timespan.total_seconds()))
 
     return output_data
 
