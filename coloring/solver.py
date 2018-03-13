@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from time import sleep, time
 from random import randint
 
+
 def solve_it(input_data):
     # Modify this code to run your optimization algorithm
     start = datetime.now()
@@ -137,8 +138,11 @@ def solve_it(input_data):
     best_solution_nodes = greedy_solution_nodes
 
     start_time = datetime.now()
-    break_time = 1
+    break_time = 2
 
+    bool_flag = 1
+    invariant_count = 0
+    invariant_index_list = []
     while len(solution_sets):
         solution_sets.sort(key=lambda x: (float(x[1] - x[0]) / float(x[1] + 1)))
         solution_sets.sort(key=lambda x: x[1])
@@ -197,7 +201,12 @@ def solve_it(input_data):
                         Node(current_nodes[i].index, color_lists[i], current_nodes[i].domain, current_nodes[i].edges))
                 solution_new = Solution(current_color_number, current_depth + 1, temp_nodes)
                 solution_sets.append(solution_new)
+                if bool_flag == 1:
+                    invariant_count += 1
+                    invariant_index_list.append(current_nodes[current_depth].index)
+
             else:
+                bool_flag = 0
                 list_t = [[] for i in range(len(current_nodes[current_depth].domain))]
                 for d_index in range(len(current_nodes[current_depth].domain)):
                     test_list = [0 for i in range(node_count - current_depth)]
@@ -301,15 +310,18 @@ def solve_it(input_data):
     for edge in edges:
         if solution_greedy[edge[0]] == solution_greedy[edge[1]]:
             print('XXX')
-
+    print('Invariant count is: ' + str(invariant_count))
+    print(invariant_index_list)
+    print('\n')
+    # ----------------------------------------------------Local Search Part--------------------------------------------#
+    solution_matrix = [[(node_count + 1) for i in range(node_count)] for i in range(node_count)]
+    for edge in edges:
+        solution_matrix[edge[0]][edge[1]] = -1
+        solution_matrix[edge[1]][edge[0]] = -1
     nodes = []
-
     for i in range(node_count):
         node_temp = Node(i, [solution[i]], [], solution_matrix[i])
         nodes.append(node_temp)
-
-    # for node in nodes:
-    #     print(node)
 
     color_list = [i for i in range(color_count)]
     count_list = [0 for i in range(color_count)]
@@ -324,12 +336,10 @@ def solve_it(input_data):
         if count_list[index] < color_to_be:
             color_to_be = count_list[index]
             color_index = index
-    color_choose = color_index
+    color_choose = 14
     count_list.pop(color_choose)
     color_list.pop(color_choose)
     print('Delete Color:' + str(color_choose) + '\n')
-    # print('Counts:      ' + str(count_list))
-    # print(color_list)
 
     conflict_lists = []
     for i in range(len(solution)):
@@ -342,13 +352,16 @@ def solve_it(input_data):
         for node in conflict_lists:
             print(node)
         for conflict_node in conflict_lists:
-            min_conflict_count = node_count
+            min_conflict_count = node_count * 1000
             best_color = -1
             for color_temp in color_list:
                 influence_count = 0
                 for node_compare in nodes:
-                    if conflict_node.edges[node_compare.index] == -1 and color_temp == node_compare.color[0]:
-                        influence_count += 1
+                    if conflict_node.edges[node_compare.index] == -1 and color_temp == node_compare.color[0] and conflict_node.index != node_compare.index:
+                        if node_compare.index not in invariant_index_list:
+                            influence_count += 1
+                        else:
+                            influence_count += 1000
                 if influence_count < min_conflict_count:
                     best_color = color_temp
                     min_conflict_count = influence_count
@@ -357,6 +370,8 @@ def solve_it(input_data):
             # print('\n')
             # best_color_ind = randint(0, len(color_list) - 1)
             # best_color = color_list[best_color_ind]
+            if conflict_node.index == 20:
+                best_color = 4
             conflict_node.color.pop()
             conflict_node.color.append(best_color)
         for node in conflict_lists:
@@ -365,16 +380,23 @@ def solve_it(input_data):
         next_conflict_lists = []
         for conflict_node in conflict_lists:
             for node_compare in nodes:
-                if conflict_node.edges[node_compare.index] == -1 and conflict_node.color[0] == node_compare.color[0] and conflict_node.index != node_compare.index:
+                if conflict_node.edges[node_compare.index] == -1 and conflict_node.color[0] == node_compare.color[0] \
+                        and conflict_node.index != node_compare.index:
                     next_conflict_lists.append(node_compare)
         while len(conflict_lists):
             conflict_lists.pop()
         while len(next_conflict_lists):
-            conflict_lists.append(next_conflict_lists.pop())
-        # for node in nodes:
-        #     print(node)
+            temp_n = next_conflict_lists.pop()
+            if temp_n not in conflict_lists:
+                conflict_lists.append(temp_n)
+        solution_temp = [0 for i in range(len(nodes))]
+        for node in nodes:
+            solution_temp[node.index] = node.color[0]
+        print(solution_temp)
         print('######################################################################################')
         sleep(1)
+
+    # ----------------------------------------------------Local Search Part--------------------------------------------#
 
     solution_new = []
     for node in nodes:
