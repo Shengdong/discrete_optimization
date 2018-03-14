@@ -138,6 +138,7 @@ def solve_it(input_data):
     best_solution_nodes = greedy_solution_nodes
 
     start_time = datetime.now()
+
     break_time = 1
 
     bool_flag = 1
@@ -395,6 +396,7 @@ def solve_it(input_data):
         print(solution_temp)
         print('######################################################################################')
         sleep(1)
+
     # ----------------------------------------------------Local Search Part--------------------------------------------#
 
     solution_new = []
