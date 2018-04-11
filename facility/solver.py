@@ -27,9 +27,11 @@ def solve_it(input_data):
     customer_count = int(parts[1])
 
     facilities = []
+    facilities_ori = []
     for i in range(1, facility_count + 1):
         parts = lines[i].split()
         facilities.append(Facility(i - 1, float(parts[0]), int(parts[1]), Point(float(parts[2]), float(parts[3])), []))
+        facilities_ori.append(Facility(i - 1, float(parts[0]), int(parts[1]), Point(float(parts[2]), float(parts[3])), []))
 
     customers = []
     for i in range(facility_count + 1, facility_count + 1 + customer_count):
@@ -72,57 +74,64 @@ def solve_it(input_data):
     total_demand = 0
     for customer in customers:
         total_demand += customer.demand
-    print(total_demand)
+    # print('Customer Total Demand:' + str(total_demand) + '\n')
     facilities.sort(key=lambda x: len(x[4]))
-    for facility in facilities:
-        print(str(facility.index) + ' ' + str(facility.setup_cost) + ' ' + str(facility.capacity) + ' '
-              + str(facility.location) + ' ' + str(facility.nearest_customers))
-    # exit(1)
-    facility_closed = []
+    # for facility in facilities:
+    #     print(str(facility.index) + ' ' + str(facility.setup_cost) + ' ' + str(facility.capacity) + ' '
+    #           + str(facility.location) + ' ' + str(facility.nearest_customers))
+    facility_opened = []
     while len(facilities):
         facilities.sort(key=lambda x: len(x[4]))
+        # for facility in facilities:
+        #     if len(facility.nearest_customers) != 0:
+        #         print(str(facility.index) + ' ' + str(facility.setup_cost) + ' ' + str(facility.capacity) + ' '
+        #             + str(facility.location) + ' ' + str(facility.nearest_customers))
+        # print('\n')
         facility_chosen = facilities.pop()
 
         if len(facility_chosen.nearest_customers) == 0:
             break
-        facility_chosen.nearest_customers.sort(key=lambda x: x[1])
 
-        temp_capacity = [i for i in capacity_remaining]
+        close_penalty = 0
+        current_cost = 0
+        temp_capacity = [capacity for capacity in capacity_remaining]
+        temp_solution = []
+        for customer_i in facility_chosen.nearest_customers:
+            current_cost += customer_i[1]
+            nearest_dist = 1000000000000000000000000000
+            assigned_index = -1
+            for facility in facility_opened:
+                if temp_capacity[facility.index] >= customers[customer_i[0]].demand:
+                    temp_dist = length(facility.location, customers[customer_i[0]].location)
+                    if temp_dist < nearest_dist:
+                        nearest_dist = temp_dist
+                        assigned_index = facility.index
+            if assigned_index == -1:
+                close_penalty = 1000000000000000000000000000000
+                break
+            temp_capacity[assigned_index] -= customers[customer_i[0]].demand
+            close_penalty += nearest_dist
+            temp_solution.append(assigned_index)
 
-        opt_cost_1 = 0
-        opt_cost_2 = 0
-        count = 0
-        for customer_index in facility_chosen.nearest_customers:
-            opt_cost_1 += customer_index[1]
-            if len(facility_closed) == 0:
-                opt_cost_2 += 10000000000000
-            min_dist = 100000000000000000000000000000000000000
-            assigned_index = [-1, -1]
-            for facility in facility_closed:
-                temp_dist = length(facility.location, customers[customer_index[0]].location)
-                if temp_dist <= min_dist:
-                    min_dist = temp_dist
-                    assigned_index[0] = facility.index
-                    assigned_index[1] = customers[customer_index[0]].index
-            for facility in facility_closed:
-                if facility.index == assigned_index[0]:
-                    opt_cost_2 += min_dist
+        close_penalty = close_penalty - current_cost
 
-        opt_cost_1 += facility_chosen.setup_cost
-        if opt_cost_2 < opt_cost_1 and count == len(facility_chosen.nearest_customers):
-            print('Yeah' + ' ' + str(facility_chosen.index) + ' ' + str(len(facilities)))
+        if close_penalty <= facility_chosen.setup_cost:
+            for index in range(len(facility_chosen.nearest_customers)):
+                customer_index = facility_chosen.nearest_customers[index]
+                customers[customer_index[0]].assigned_facility.append(temp_solution[index])
+                capacity_remaining[temp_solution[index]] -= customers[customer_index[0]].demand
+        else:
+            facility_opened.append(facility_chosen)
+            facility_chosen.nearest_customers.sort(key=lambda x: x[1])
             for customer_index in facility_chosen.nearest_customers:
-                for facility in facility_closed:
-                    if customer_index[2] <= capacity_remaining[facility.index]:
-                        capacity_remaining[facility.index] -= customer_index[2]
-                        customers[customer_index[0]].assigned_facility.append(facility_chosen.index)
-            continue
-        facility_closed.append(facility_chosen)
+                if capacity_remaining[facility_chosen.index] >= customers[customer_index[0]].demand and len(customers[customer_index[0]].assigned_facility) == 0:
+                    customers[customer_index[0]].assigned_facility.append(facility_chosen.index)
+                    capacity_remaining[facility_chosen.index] -= customers[customer_index[0]].demand
 
-        for customer_index in facility_chosen.nearest_customers:
-            if capacity_remaining[facility_chosen.index] >= customers[customer_index[0]].demand and len(customers[customer_index[0]].assigned_facility) == 0:
-                customers[customer_index[0]].assigned_facility.append(facility_chosen.index)
-                capacity_remaining[facility_chosen.index] -= customers[customer_index[0]].demand
+        for facility in facilities:
+            while len(facility.nearest_customers) > 0:
+                facility.nearest_customers.pop()
+
         for customer in customers:
             if len(customer.assigned_facility) != 0:
                 continue
@@ -155,18 +164,33 @@ def solve_it(input_data):
     obj = sum([f.setup_cost * used[f.index] for f in facilities])
     for customer in customers:
         obj += length(customer.location, facilities[solution[customer.index]].location)
-
-
-    obj_new = obj
-
+    # demand = [0 for facility in facilities]
+    # for i in range(len(solution)):
+    #     demand[solution[i]] += customers[i].demand
+    #
+    # print(demand)
+    # capacity = [0 for facility in facilities]
+    # for i in range(len(facilities)):
+    #     capacity[i] = facilities[i].capacity
+    # print(capacity)
+    #
+    # capacity_remaining_1 = [0 for facility in facilities]
+    # compare = [0 for facility in facilities]
+    # for i in range(len(facilities)):
+    #     capacity_remaining_1[i] = capacity[i] - demand[i]
+    #     compare[i] = capacity_remaining_1[i] - capacity_remaining[i]
+    #     if capacity_remaining_1[i] < 0:
+    #         print("Wow")
+    #     if compare[i] != 0:
+    #         print("Wa Wow")
+    # print(capacity_remaining_1)
+    # print(compare)
     # prepare the solution in the specified output format
     output_data = '%.2f' % obj + ' ' + str(0) + '\n'
     output_data += ' '.join(map(str, solution))
+#    print(output_data)
 
     return output_data
-
-
-import sys
 
 if __name__ == '__main__':
     import sys
@@ -175,7 +199,7 @@ if __name__ == '__main__':
         file_location = sys.argv[1].strip()
         with open(file_location, 'r') as input_data_file:
             input_data = input_data_file.read()
-        print(solve_it(input_data))
+        solve_it(input_data)
     else:
         print(
             'This test requires an input file.  Please select one from the data directory. (i.e. python solver.py ./data/fl_16_2)')
