@@ -3,6 +3,7 @@
 
 import math
 from collections import namedtuple
+import matplotlib.pyplot as plt
 
 Customer = namedtuple("Customer", ['index', 'demand', 'x', 'y'])
 
@@ -70,6 +71,31 @@ def solve_it(input_data):
     for v in range(0, vehicle_count):
         outputData += str(depot.index) + ' ' + ' '.join([str(customer.index) for customer in vehicle_tours[v]]) + ' ' + str(depot.index) + '\n'
 
+
+    for customer in customers:
+        if customer.index !=0:
+            plt.scatter(customer.x, customer.y, color='green', linewidths=0.2)
+        else:
+            plt.scatter(customer.x, customer.y, color='red', linewidths=0.5)
+
+    color_list = ['b', 'g', 'y', 'r', 'k', 'm', 'c', 'orange', 'pink', 'olive', 'peru', 'navy',
+                  'gold', 'fuchsia', 'darkorchid', 'aqua']
+    valid_count = 0
+    for v in range(0, vehicle_count):
+        vehicle_tour = vehicle_tours[v]
+        if len(vehicle_tour) > 0:
+            valid_count += 1
+            plt.plot([vehicle_tour[0].x, depot.x], [vehicle_tour[0].y, depot.y], color=color_list[v%len(color_list)])
+            for i in range(0, len(vehicle_tour)-1):
+                plt.plot([vehicle_tour[i].x, vehicle_tour[i+1].x], [vehicle_tour[i].y, vehicle_tour[i+1].y], color=color_list[v%len(color_list)])
+            plt.plot([vehicle_tour[len(vehicle_tour)-1].x, depot.x], [vehicle_tour[len(vehicle_tour)-1].y, depot.y], color=color_list[v%len(color_list)])
+    print(valid_count)
+    # for i in range(-1, nodeCount - 1):
+    #     plt.plot([points[solution_opt[i]].x, points[solution_opt[i + 1]].x],
+    #              [points[solution_opt[i]].y, points[solution_opt[i + 1]].y])
+    # plt.legend()
+    plt.show()
+    print(outputData)
     return outputData
 
 
@@ -81,8 +107,17 @@ if __name__ == '__main__':
         file_location = sys.argv[1].strip()
         with open(file_location, 'r') as input_data_file:
             input_data = input_data_file.read()
-        print(solve_it(input_data))
+        solve_it(input_data)
     else:
+        file_path_1 = '/home/kaylor/Desktop/discrete_optimization/vrp/data/vrp_16_3_1'
+        file_path_2 = '/home/kaylor/Desktop/discrete_optimization/vrp/data/vrp_26_8_1'
+        file_path_3 = '/home/kaylor/Desktop/discrete_optimization/vrp/data/vrp_51_5_1'
+        file_path_4 = '/home/kaylor/Desktop/discrete_optimization/vrp/data/vrp_101_10_1'
+        file_path_5 = '/home/kaylor/Desktop/discrete_optimization/vrp/data/vrp_200_16_1'
+        file_path_6 = '/home/kaylor/Desktop/discrete_optimization/vrp/data/vrp_421_41_1'
+        file_location = file_path_2.strip()
 
-        print('This test requires an input file.  Please select one from the data directory. (i.e. python solver.py ./data/vrp_5_4_1)')
+        with open(file_location, 'r') as input_data_file:
+            input_data = input_data_file.read()
+        solve_it(input_data)
 
