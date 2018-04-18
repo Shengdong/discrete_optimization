@@ -22,6 +22,7 @@
       <option name="ignoredIdentifiers">
         <list>
           <option value="list.top" />
+          <option value="list.erase" />
         </list>
       </option>
     </inspection_tool>
